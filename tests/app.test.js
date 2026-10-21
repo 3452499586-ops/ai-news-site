@@ -8,8 +8,40 @@ const {
   sortItems,
   summarizeItems,
   parseQueryState,
-  buildQueryState
+  buildQueryState,
+  renderNewsList,
+  renderFeatured,
+  renderSummary,
+  initNewsSite
 } = require('../app.js');
+
+class MiniElement {
+  constructor(tagName, ownerDocument) {
+    this.tagName = tagName.toUpperCase();
+    this.ownerDocument = ownerDocument;
+    this.children = [];
+    this.attributes = {};
+    this.dataset = {};
+    this.className = '';
+    this.textContent = '';
+    this.hidden = false;
+    this.listeners = {};
+  }
+  append(...nodes) { this.children.push(...nodes); }
+  setAttribute(name, value) { this.attributes[name] = String(value); }
+  getAttribute(name) { return this.attributes[name] ?? null; }
+  addEventListener(type, handler) { this.listeners[type] = handler; }
+  click() { if (this.listeners.click) this.listeners.click({ currentTarget: this }); }
+  replaceChildren(...nodes) { this.children = [...nodes]; }
+}
+
+class MiniDocument {
+  createElement(tagName) { return new MiniElement(tagName, this); }
+}
+
+function descendants(node) {
+  return [node, ...node.children.flatMap(descendants)];
+}
 
 const baseItem = {
   id: 'alpha',
@@ -145,4 +177,37 @@ test('构建 URL 状态时省略空值并使用稳定字段顺序', () => {
     buildQueryState({ query: '语音 Agent', company: '', region: '中国', category: '模型与产品', verificationStatus: '', openSourceStatus: '', apiStatus: '已开放', isResearch: 'false', sort: 'newest' }),
     '?q=%E8%AF%AD%E9%9F%B3+Agent&region=%E4%B8%AD%E5%9B%BD&category=%E6%A8%A1%E5%9E%8B%E4%B8%8E%E4%BA%A7%E5%93%81&api=%E5%B7%B2%E5%BC%80%E6%94%BE&research=false'
   );
+});
+
+test('DOM 接口按计划导出', () => {
+  assert.equal(typeof renderNewsList, 'function');
+  assert.equal(typeof renderFeatured, 'function');
+  assert.equal(typeof renderSummary, 'function');
+  assert.equal(typeof initNewsSite, 'function');
+});
+
+test('渲染列表跳过无效资讯并为来源链接设置安全属性', () => {
+  const document = new MiniDocument();
+  const root = document.createElement('div');
+  const invalid = { ...baseItem, id: 'invalid', title: '', sources: [] };
+  renderNewsList([baseItem, invalid], root);
+  const nodes = descendants(root);
+  assert.equal(nodes.filter((node) => node.className === 'timeline-item').length, 1);
+  const link = nodes.find((node) => node.tagName === 'A');
+  assert.equal(link.getAttribute('target'), '_blank');
+  assert.equal(link.getAttribute('rel'), 'noopener noreferrer');
+});
+
+test('详情按钮维护 aria-expanded 与内容显隐', () => {
+  const document = new MiniDocument();
+  const root = document.createElement('div');
+  renderNewsList([baseItem], root);
+  const nodes = descendants(root);
+  const toggle = nodes.find((node) => node.className === 'details-toggle');
+  const details = nodes.find((node) => node.className === 'news-details');
+  assert.equal(toggle.getAttribute('aria-expanded'), 'false');
+  assert.equal(details.hidden, true);
+  toggle.click();
+  assert.equal(toggle.getAttribute('aria-expanded'), 'true');
+  assert.equal(details.hidden, false);
 });
