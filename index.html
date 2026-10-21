@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="description" content="经过人工核验、完全本地运行的中文 AI 权威资讯档案。">
+  <title>AI 信号档案｜权威 AI 资讯</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳至主要内容</a>
+
+  <header class="site-header">
+    <nav class="site-nav" aria-label="主导航">
+      <a class="brand" href="#top" aria-label="AI 信号档案首页">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <span>AI 信号档案</span>
+      </a>
+      <div class="nav-links">
+        <a href="#today">今日精选</a>
+        <a href="#timeline-section" data-nav-filter="模型与产品">模型与产品</a>
+        <a href="#timeline-section" data-nav-filter="研究与开源">研究与开源</a>
+        <a href="#timeline-section" data-nav-filter="商业">商业</a>
+        <a href="#timeline-section" data-nav-filter="政策与安全">政策与安全</a>
+        <a href="#sources">来源库</a>
+        <a href="#method">核验方法</a>
+      </div>
+      <button class="search-jump" type="button" data-focus-search aria-label="转到本地搜索">本地搜索</button>
+    </nav>
+  </header>
+
+  <div id="top"></div>
+  <section id="signal-bar" class="signal-bar" aria-label="今日信号概览">
+    <p>正在读取本地资讯数据……</p>
+  </section>
+
+  <main id="main-content">
+    <noscript>
+      <p class="noscript-notice">此页面的数据和交互完全保存在本地。请启用 JavaScript 以查看已内置的资讯；页面不会因此联网。</p>
+    </noscript>
+
+    <section id="today" class="hero" aria-labelledby="today-title">
+      <div class="hero-main">
+        <div class="section-heading">
+          <p>今日最重要信号</p>
+          <h1 id="today-title">从噪声中识别可信变化</h1>
+        </div>
+        <div id="featured-stage" class="featured-stage" aria-live="polite">
+          <article class="featured-placeholder">
+            <h2>正在载入本地精选</h2>
+            <p>所有内容来自项目内的 news-data.js，不会自动访问来源网站。</p>
+          </article>
+        </div>
+        <div class="carousel-controls" aria-label="重点资讯切换">
+          <button type="button" data-carousel-prev aria-label="上一条重点资讯">上一条</button>
+          <p id="carousel-status" aria-live="polite">— / —</p>
+          <button type="button" data-carousel-next aria-label="下一条重点资讯">下一条</button>
+        </div>
+      </div>
+      <aside id="verification-overview" class="verification-overview" aria-labelledby="verification-title">
+        <h2 id="verification-title">今日核验概览</h2>
+        <p>正在计算本地数据……</p>
+      </aside>
+    </section>
+
+    <section class="query-panel" aria-labelledby="query-title">
+      <div class="section-heading compact">
+        <p>只在当前设备中处理</p>
+        <h2 id="query-title">搜索与筛选</h2>
+      </div>
+      <form id="filter-form">
+        <div class="search-field">
+          <label for="search-input">搜索标题、机构、摘要、标签或来源</label>
+          <input id="search-input" name="q" type="search" autocomplete="off" placeholder="例如：DeepSeek、语音、开源">
+        </div>
+        <div class="filter-grid">
+          <label>公司或机构<select name="company"><option value="">全部机构</option></select></label>
+          <label>地区<select name="region"><option value="">全部地区</option></select></label>
+          <label>内容类型<select name="category"><option value="">全部类型</option></select></label>
+          <label>核验状态<select name="verificationStatus"><option value="">全部状态</option></select></label>
+          <label>开源状态<select name="openSourceStatus"><option value="">全部状态</option></select></label>
+          <label>API 状态<select name="apiStatus"><option value="">全部状态</option></select></label>
+          <label>研究属性<select name="isResearch"><option value="">不限</option><option value="true">研究内容</option><option value="false">非研究内容</option></select></label>
+          <label>排序<select name="sort"><option value="newest">时间：最新优先</option><option value="oldest">时间：最早优先</option><option value="score">编辑评分</option></select></label>
+        </div>
+        <div class="filter-actions">
+          <button type="reset" data-clear-filters>清除条件</button>
+          <p id="live-region" aria-live="polite" aria-atomic="true">等待本地数据</p>
+        </div>
+      </form>
+    </section>
+
+    <section id="timeline-section" class="timeline-section" aria-labelledby="timeline-title">
+      <div class="section-heading">
+        <p>按事件发生时间排列</p>
+        <h2 id="timeline-title">AI 信号时间线</h2>
+      </div>
+      <div id="empty-state" class="empty-state" hidden>
+        <h3>没有符合当前条件的资讯</h3>
+        <p data-empty-summary>请调整条件或清除筛选。</p>
+        <button type="button" data-clear-filters>清除全部条件</button>
+      </div>
+      <div id="timeline" class="timeline" aria-busy="true"></div>
+    </section>
+
+    <section class="context-grid" aria-label="深度背景与来源">
+      <section class="context-panel" aria-labelledby="context-title">
+        <div class="section-heading compact">
+          <p>本批次脉络</p>
+          <h2 id="context-title">从模型能力到部署边界</h2>
+        </div>
+        <p>本期资讯集中在模型分发、实时语音、低资源语言、时间序列和 Agent 安全。页面只整理已发布材料，不自动推断后续进展。</p>
+      </section>
+      <aside id="source-radar" class="source-radar" aria-labelledby="radar-title">
+        <h2 id="radar-title">来源雷达</h2>
+        <p>正在统计来源类型……</p>
+      </aside>
+    </section>
+
+    <section id="sources" class="evidence-section" aria-labelledby="sources-title">
+      <div class="section-heading compact">
+        <p>证据优先级</p>
+        <h2 id="sources-title">来源库说明</h2>
+      </div>
+      <p>优先采用官方发布页、正式文档、政府与标准机构资料和官方代码仓库；融资、收购、监管、安全事故等复杂事件额外寻找独立权威来源。</p>
+    </section>
+
+    <section id="method" class="method-section" aria-labelledby="method-title">
+      <div class="section-heading compact">
+        <p>人工核验，手动更新</p>
+        <h2 id="method-title">核验方法</h2>
+      </div>
+      <div class="method-columns">
+        <article>
+          <h3>已核验</h3>
+          <p>官方材料与独立来源相互支持，或正式文档与公开代码仓库能够共同证明。</p>
+        </article>
+        <article>
+          <h3>官方声明</h3>
+          <p>信息确由机构发布，但性能、用户量、效果或未来计划尚缺少独立确认。</p>
+        </article>
+        <article>
+          <h3>更新原则</h3>
+          <p>后续只手动编辑本地数据文件。页面不会抓取、调用 AI、自动发布或发送通知。</p>
+        </article>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>AI 信号档案 · 本地静态原型</p>
+    <p>无 Cookie · 无分析脚本 · 无后台请求 · 来源链接仅在主动点击后打开</p>
+  </footer>
+
+  <script src="news-data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

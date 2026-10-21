@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <title>AI 资讯站浏览器冒烟测试</title>
+  <style>
+    body { font: 16px/1.6 system-ui, sans-serif; max-width: 900px; margin: 40px auto; padding: 0 20px; }
+    #results { padding: 20px; border: 2px solid #667085; }
+    .pass { color: #08764d; } .fail { color: #972236; }
+    .fixture { position: absolute; left: -10000px; width: 900px; }
+  </style>
+</head>
+<body>
+  <h1>浏览器冒烟测试</h1>
+  <div id="results" aria-live="polite">正在执行……</div>
+
+  <div class="fixture" aria-hidden="true">
+    <div id="signal-bar"></div>
+    <div id="featured-stage"></div>
+    <div id="verification-overview"></div>
+    <p id="carousel-status"></p>
+    <button type="button" data-carousel-prev>上一条</button>
+    <button type="button" data-carousel-next>下一条</button>
+    <form id="filter-form">
+      <input id="search-input" name="q">
+      <select name="company"><option value="">全部</option></select>
+      <select name="region"><option value="">全部</option></select>
+      <select name="category"><option value="">全部</option></select>
+      <select name="verificationStatus"><option value="">全部</option></select>
+      <select name="openSourceStatus"><option value="">全部</option></select>
+      <select name="apiStatus"><option value="">全部</option></select>
+      <select name="isResearch"><option value="">不限</option><option value="true">是</option><option value="false">否</option></select>
+      <select name="sort"><option value="newest">最新</option><option value="oldest">最早</option><option value="score">评分</option></select>
+      <button type="reset" data-clear-filters>清除</button>
+    </form>
+    <p id="live-region"></p>
+    <div id="timeline"></div>
+    <div id="empty-state" hidden><p data-empty-summary></p><button type="button" data-clear-filters>清除全部条件</button></div>
+    <div id="source-radar"></div>
+    <button type="button" data-focus-search>搜索</button>
+  </div>
+
+  <script src="../news-data.js"></script>
+  <script src="../app.js"></script>
+  <script>
+    (async function run() {
+      const output = document.getElementById('results');
+      const checks = [];
+      function check(condition, message) {
+        if (!condition) throw new Error(message);
+        checks.push(message);
+      }
+      function wait(ms) { return new Promise((resolve) => setTimeout(resolve, ms)); }
+
+      try {
+        check(typeof window.AINewsApp.initNewsSite === 'function', '存在 initNewsSite');
+        const original = window.AI_NEWS_DATA;
+        window.AI_NEWS_DATA = [...original, { id: 'invalid-item', title: '', sources: [] }];
+        window.AINewsApp.initNewsSite(document, window.location, window.history);
+
+        check(document.querySelectorAll('.timeline-item').length === original.length, '无效条目不渲染，合法条目数量一致');
+        const source = document.querySelector('.source-list a');
+        check(source && source.target === '_blank', '来源链接在新窗口打开');
+        check(source && source.rel === 'noopener noreferrer', '来源链接包含安全 rel 属性');
+
+        const toggle = document.querySelector('.details-toggle');
+        check(toggle && toggle.getAttribute('aria-expanded') === 'false', '详情按钮初始为收起');
+        toggle.click();
+        check(toggle.getAttribute('aria-expanded') === 'true', '点击后详情按钮更新 aria-expanded');
+        const openedDetails = document.getElementById(toggle.getAttribute('aria-controls'));
+        check([...openedDetails.querySelectorAll('.news-times dt')].map((node) => node.textContent).join('|') === '事件发生时间|原始发布时间|本站核验时间', '详情展示三类时间');
+
+        const search = document.getElementById('search-input');
+        const company = document.querySelector('[name="company"]');
+        const status = document.querySelector('[name="verificationStatus"]');
+        company.value = original[0].company;
+        status.value = original[0].verificationStatus;
+        search.value = '__no_result__';
+        search.dispatchEvent(new Event('input', { bubbles: true }));
+        await wait(220);
+        check(document.getElementById('empty-state').hidden === false, '多条件组合无结果时显示空状态');
+        const emptySummary = document.querySelector('[data-empty-summary]').textContent;
+        check(emptySummary.includes('搜索：__no_result__') && emptySummary.includes('机构：'), '空状态使用中文名称说明当前条件');
+
+        search.value = original[0].title;
+        search.dispatchEvent(new Event('input', { bubbles: true }));
+        const submitted = document.getElementById('filter-form').dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+        check(submitted === false, '按 Enter 对应的表单提交被本地逻辑阻止');
+        check(document.getElementById('empty-state').hidden === true && document.querySelectorAll('.timeline-item').length >= 1, '提交时不等待防抖即可应用最新搜索值');
+        check(window.location.search.includes('q='), '提交后最新搜索值写入本地 URL');
+
+        document.querySelector('#empty-state [data-clear-filters]').click();
+        await wait(20);
+        check(document.querySelectorAll('.timeline-item').length === original.length, '清除条件后恢复全部合法资讯');
+
+        const sort = document.querySelector('[name="sort"]');
+        sort.value = 'oldest';
+        sort.dispatchEvent(new Event('change', { bubbles: true }));
+        const expectedOldest = window.AINewsApp.sortItems(original, 'oldest')[0].id;
+        check(document.querySelector('.timeline-item').dataset.newsId === expectedOldest, '最早优先排序更新时间线');
+        check(window.location.search.includes('sort=oldest'), '筛选状态写入本地 URL');
+
+        output.className = 'pass';
+        output.textContent = `PASS：${checks.length} 项浏览器断言通过`;
+        document.title = 'PASS - AI 资讯站浏览器冒烟测试';
+      } catch (error) {
+        output.className = 'fail';
+        output.textContent = `FAIL：${error.message}`;
+        document.title = 'FAIL - AI 资讯站浏览器冒烟测试';
+        console.error(error);
+      }
+    }());
+  </script>
+</body>
+</html>
