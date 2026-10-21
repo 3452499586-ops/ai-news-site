@@ -67,7 +67,8 @@
         check(toggle && toggle.getAttribute('aria-expanded') === 'false', '详情按钮初始为收起');
         toggle.click();
         check(toggle.getAttribute('aria-expanded') === 'true', '点击后详情按钮更新 aria-expanded');
-        check([...document.querySelectorAll('.news-times dt')].map((node) => node.textContent).join('|') === '事件发生时间|原始发布时间|本站核验时间', '详情展示三类时间');
+        const openedDetails = document.getElementById(toggle.getAttribute('aria-controls'));
+        check([...openedDetails.querySelectorAll('.news-times dt')].map((node) => node.textContent).join('|') === '事件发生时间|原始发布时间|本站核验时间', '详情展示三类时间');
 
         const search = document.getElementById('search-input');
         const company = document.querySelector('[name="company"]');
@@ -81,8 +82,12 @@
         const emptySummary = document.querySelector('[data-empty-summary]').textContent;
         check(emptySummary.includes('搜索：__no_result__') && emptySummary.includes('机构：'), '空状态使用中文名称说明当前条件');
 
+        search.value = original[0].title;
+        search.dispatchEvent(new Event('input', { bubbles: true }));
         const submitted = document.getElementById('filter-form').dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
         check(submitted === false, '按 Enter 对应的表单提交被本地逻辑阻止');
+        check(document.getElementById('empty-state').hidden === true && document.querySelectorAll('.timeline-item').length >= 1, '提交时不等待防抖即可应用最新搜索值');
+        check(window.location.search.includes('q='), '提交后最新搜索值写入本地 URL');
 
         document.querySelector('#empty-state [data-clear-filters]').click();
         await wait(20);

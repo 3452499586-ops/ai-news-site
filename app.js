@@ -409,12 +409,17 @@
       isResearch: '研究属性', sort: '排序'
     };
     const valueLabels = {
-      verified: '已核验', official: '官方声明', true: '研究内容', false: '非研究内容',
-      newest: '时间：最新优先', oldest: '时间：最早优先', score: '编辑评分'
+      verificationStatus: { verified: '已核验', official: '官方声明' },
+      isResearch: { true: '研究内容', false: '非研究内容' },
+      sort: { newest: '时间：最新优先', oldest: '时间：最早优先', score: '编辑评分' }
     };
     return Object.entries(state)
       .filter(([key, value]) => value && !(key === 'sort' && value === 'newest'))
-      .map(([key, value]) => `${fieldLabels[key] || key}：${valueLabels[value] || value}`)
+      .map(([key, value]) => {
+        const labels = valueLabels[key];
+        const displayValue = labels && Object.hasOwn(labels, value) ? labels[value] : value;
+        return `${fieldLabels[key] || key}：${displayValue}`;
+      })
       .join('；');
   }
 

@@ -247,4 +247,6 @@ test('空结果摘要使用带名称的中文筛选条件', () => {
     describeActiveFilters({ query: '语音', verificationStatus: 'official', isResearch: 'false', sort: 'score' }),
     '搜索：语音；核验状态：官方声明；研究属性：非研究内容；排序：编辑评分'
   );
+  assert.equal(describeActiveFilters({ query: 'official' }), '搜索：official');
+  assert.equal(describeActiveFilters({ query: 'constructor' }), '搜索：constructor');
 });
