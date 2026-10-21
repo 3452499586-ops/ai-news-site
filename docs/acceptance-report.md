@@ -25,7 +25,7 @@ git diff --check
 结果：
 
 - `app.js` 与 `news-data.js` 语法检查通过。
-- Node 测试共 15 项：15 通过，0 失败，0 跳过。
+- Node 测试共 18 项：18 通过，0 失败，0 跳过。
 - 数据测试确认：正式精选为 8 条、ID 唯一、无 `pending`、三类时间含时区、每条具备一级来源，需独立核验的复杂事件具备二级来源。
 - 逻辑与 DOM 测试确认：全文搜索、组合筛选、三种排序、URL 状态、统计、无效条目跳过、安全外链属性和详情按钮的 `aria-expanded` 状态。
 - 静态审计通过：页面结构、本地资源引用、响应式规则、打印样式、减少动态效果、键盘焦点、交付文档均存在；未发现 `fetch`、`XMLHttpRequest`、`WebSocket`、Service Worker、分析脚本、远程资源、嵌入密钥或无限动画。
@@ -59,7 +59,7 @@ git diff --check
 4. 开启系统“减少动态效果”并检查打印预览。
 5. 在浏览器 Network 面板清空记录后刷新并执行交互，确认没有外部请求、WebSocket、轮询和 Service Worker。
 
-建议先双击 `tests/browser-smoke.html`。该页面会在浏览器内验证数据装载、查询逻辑、组合筛选、排序、URL 状态、DOM 渲染、安全外链、详情展开和初始化流程；全部显示 PASS 后，再按 [README](../README.md) 的 Network 步骤完成最后人工复核。
+建议先双击 `tests/browser-smoke.html`。该页面会在浏览器内验证数据装载、无效条目拦截、安全外链、详情展开、三类时间、多条件空结果、提交拦截、清除恢复、排序和 URL 状态；全部显示 PASS 后，再按 [README](../README.md) 的 Network 步骤完成最后人工复核。
 
 ## Codex 额度保护
 

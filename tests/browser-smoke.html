@@ -67,17 +67,33 @@
         check(toggle && toggle.getAttribute('aria-expanded') === 'false', '详情按钮初始为收起');
         toggle.click();
         check(toggle.getAttribute('aria-expanded') === 'true', '点击后详情按钮更新 aria-expanded');
+        check([...document.querySelectorAll('.news-times dt')].map((node) => node.textContent).join('|') === '事件发生时间|原始发布时间|本站核验时间', '详情展示三类时间');
 
         const search = document.getElementById('search-input');
+        const company = document.querySelector('[name="company"]');
+        const status = document.querySelector('[name="verificationStatus"]');
+        company.value = original[0].company;
+        status.value = original[0].verificationStatus;
         search.value = '__no_result__';
         search.dispatchEvent(new Event('input', { bubbles: true }));
         await wait(220);
-        check(document.getElementById('empty-state').hidden === false, '组合条件无结果时显示空状态');
-        check(document.querySelector('[data-empty-summary]').textContent.includes('__no_result__'), '空状态说明当前条件');
+        check(document.getElementById('empty-state').hidden === false, '多条件组合无结果时显示空状态');
+        const emptySummary = document.querySelector('[data-empty-summary]').textContent;
+        check(emptySummary.includes('搜索：__no_result__') && emptySummary.includes('机构：'), '空状态使用中文名称说明当前条件');
+
+        const submitted = document.getElementById('filter-form').dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+        check(submitted === false, '按 Enter 对应的表单提交被本地逻辑阻止');
 
         document.querySelector('#empty-state [data-clear-filters]').click();
         await wait(20);
         check(document.querySelectorAll('.timeline-item').length === original.length, '清除条件后恢复全部合法资讯');
+
+        const sort = document.querySelector('[name="sort"]');
+        sort.value = 'oldest';
+        sort.dispatchEvent(new Event('change', { bubbles: true }));
+        const expectedOldest = window.AINewsApp.sortItems(original, 'oldest')[0].id;
+        check(document.querySelector('.timeline-item').dataset.newsId === expectedOldest, '最早优先排序更新时间线');
+        check(window.location.search.includes('sort=oldest'), '筛选状态写入本地 URL');
 
         output.className = 'pass';
         output.textContent = `PASS：${checks.length} 项浏览器断言通过`;

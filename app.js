@@ -29,6 +29,7 @@
     const hasPrimary = Boolean(item && Array.isArray(item.sources)
       && item.sources.some((source) => source && source.type === 'primary' && source.url));
     if (!hasPrimary) errors.push('primarySource');
+    if (item && item.verificationStatus === 'pending') errors.push('verificationStatus');
     return { valid: errors.length === 0, errors };
   }
 
@@ -160,6 +161,25 @@
     rootNode.append(block);
   }
 
+  function appendTimeDetails(documentRef, rootNode, item) {
+    const block = createElement(documentRef, 'section', 'detail-block wide news-times');
+    block.append(createElement(documentRef, 'h4', '', '时间记录'));
+    const list = createElement(documentRef, 'dl');
+    const entries = [
+      ['事件发生时间', item.eventTime],
+      ['原始发布时间', item.publishedTime],
+      ['本站核验时间', item.verifiedTime]
+    ];
+    for (const [label, value] of entries) {
+      const time = createElement(documentRef, 'time', '', formatDate(value));
+      time.setAttribute('datetime', value);
+      list.append(createElement(documentRef, 'dt', '', label), createElement(documentRef, 'dd'));
+      list.children[list.children.length - 1].append(time);
+    }
+    block.append(list);
+    rootNode.append(block);
+  }
+
   function renderNewsList(items, rootNode) {
     if (!rootNode) return;
     const documentRef = rootNode.ownerDocument || root.document;
@@ -204,6 +224,7 @@
       const details = createElement(documentRef, 'div', 'news-details');
       details.id = detailsId;
       details.hidden = true;
+      appendTimeDetails(documentRef, details, item);
       appendDetail(documentRef, details, '背景', item.background, false);
       appendDetail(documentRef, details, '核心事实', item.content, false);
       appendDetail(documentRef, details, '为什么重要', item.importance, false);
@@ -362,7 +383,7 @@
       companies: uniqueValues(items, 'company'),
       regions: uniqueValues(items, 'region'),
       categories: uniqueValues(items, 'category'),
-      verificationStatuses: ['verified', 'official', 'pending'],
+      verificationStatuses: ['verified', 'official'],
       openSourceStatuses: uniqueValues(items, 'openSourceStatus'),
       apiStatuses: uniqueValues(items, 'apiStatus'),
       sortModes: ['newest', 'oldest', 'score']
@@ -379,6 +400,31 @@
       option.setAttribute('value', value);
       select.append(option);
     }
+  }
+
+  function describeActiveFilters(state = {}) {
+    const fieldLabels = {
+      query: '搜索', company: '机构', region: '地区', category: '内容类型',
+      verificationStatus: '核验状态', openSourceStatus: '开源状态', apiStatus: 'API 状态',
+      isResearch: '研究属性', sort: '排序'
+    };
+    const valueLabels = {
+      verified: '已核验', official: '官方声明', true: '研究内容', false: '非研究内容',
+      newest: '时间：最新优先', oldest: '时间：最早优先', score: '编辑评分'
+    };
+    return Object.entries(state)
+      .filter(([key, value]) => value && !(key === 'sort' && value === 'newest'))
+      .map(([key, value]) => `${fieldLabels[key] || key}：${valueLabels[value] || value}`)
+      .join('；');
+  }
+
+  function bindLocalFormSubmit(form, onSubmit, clearPending) {
+    if (!form || typeof form.addEventListener !== 'function') return;
+    form.addEventListener('submit', (event) => {
+      if (event && typeof event.preventDefault === 'function') event.preventDefault();
+      if (typeof clearPending === 'function') clearPending();
+      if (typeof onSubmit === 'function') onSubmit();
+    });
   }
 
   function initNewsSite(documentRef, locationRef, historyRef) {
@@ -453,10 +499,8 @@
         empty.hidden = result.length !== 0;
         const summary = empty.querySelector('[data-empty-summary]');
         if (summary) {
-          const conditions = Object.entries(state)
-            .filter(([key, value]) => value && !(key === 'sort' && value === 'newest'))
-            .map(([, value]) => value);
-          summary.textContent = conditions.length ? `当前条件：${conditions.join('、')}` : '请调整条件或清除筛选。';
+          const conditions = describeActiveFilters(state);
+          summary.textContent = conditions ? `当前条件：${conditions}` : '请调整条件或清除筛选。';
         }
       }
       if (historyRef && typeof historyRef.replaceState === 'function' && locationRef) {
@@ -476,12 +520,17 @@
     applyState();
 
     let searchTimer = null;
+    const clearPendingSearch = () => {
+      root.clearTimeout(searchTimer);
+      searchTimer = null;
+    };
     if (controls.query) {
       controls.query.addEventListener('input', () => {
-        root.clearTimeout(searchTimer);
+        clearPendingSearch();
         searchTimer = root.setTimeout(applyState, 140);
       });
     }
+    bindLocalFormSubmit(form, applyState, clearPendingSearch);
     form.addEventListener('change', applyState);
     form.addEventListener('reset', () => root.setTimeout(applyState, 0));
 
@@ -550,6 +599,8 @@
     renderNewsList,
     renderFeatured,
     renderSummary,
+    describeActiveFilters,
+    bindLocalFormSubmit,
     initNewsSite
   };
 

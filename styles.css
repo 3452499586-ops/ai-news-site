@@ -683,6 +683,22 @@ main > section,
   grid-column: 1 / -1;
 }
 
+.news-times dl {
+  display: grid;
+  grid-template-columns: minmax(130px, .45fr) 1fr;
+  gap: 8px 18px;
+  margin: 0;
+}
+
+.news-times dt {
+  color: var(--muted);
+}
+
+.news-times dd {
+  margin: 0;
+  font-weight: 680;
+}
+
 .source-list {
   display: grid;
   gap: 10px;
@@ -1016,9 +1032,18 @@ main > section,
   }
 
   .featured-item .featured-summary,
+  .featured-meta,
+  .overview-number span,
+  .signal-stat span,
   .context-panel > p,
   .site-footer {
     color: #222222;
+  }
+
+  .signal-bar,
+  .signal-bar-inner {
+    color: #000000;
+    background: #FFFFFF;
   }
 
   .news-details[hidden] {

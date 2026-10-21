@@ -12,6 +12,8 @@ const {
   renderNewsList,
   renderFeatured,
   renderSummary,
+  describeActiveFilters,
+  bindLocalFormSubmit,
   initNewsSite
 } = require('../app.js');
 
@@ -129,10 +131,13 @@ test('公司、地区、类型、核验、开源、API 与研究筛选可组合'
 
 test('关键字段或一级来源缺失时校验拒绝条目', () => {
   assert.deepEqual(validateItem(baseItem), { valid: true, errors: [] });
-  const invalid = { ...baseItem, title: '', sources: [] };
-  const result = validateItem(invalid);
-  assert.equal(result.valid, false);
-  assert.deepEqual(result.errors, ['title', 'primarySource']);
+  for (const field of ['id', 'title', 'eventTime', 'publishedTime', 'verifiedTime']) {
+    const result = validateItem({ ...baseItem, [field]: '' });
+    assert.equal(result.valid, false, `${field} 缺失时必须拒绝`);
+    assert.equal(result.errors.includes(field), true);
+  }
+  assert.equal(validateItem({ ...baseItem, sources: [] }).errors.includes('primarySource'), true);
+  assert.equal(validateItem({ ...baseItem, verificationStatus: 'pending' }).errors.includes('verificationStatus'), true);
 });
 
 test('三种排序不修改原数组，并以事件时间打破评分同分', () => {
@@ -210,4 +215,36 @@ test('详情按钮维护 aria-expanded 与内容显隐', () => {
   toggle.click();
   assert.equal(toggle.getAttribute('aria-expanded'), 'true');
   assert.equal(details.hidden, false);
+});
+
+test('详情明确展示事件、发布与核验三类时间', () => {
+  const document = new MiniDocument();
+  const root = document.createElement('div');
+  renderNewsList([baseItem], root);
+  const nodes = descendants(root);
+  const labels = nodes.filter((node) => node.tagName === 'DT').map((node) => node.textContent);
+  assert.deepEqual(labels, ['事件发生时间', '原始发布时间', '本站核验时间']);
+  const datetimes = nodes.filter((node) => node.tagName === 'TIME').map((node) => node.getAttribute('datetime'));
+  assert.equal(datetimes.includes(baseItem.eventTime), true);
+  assert.equal(datetimes.includes(baseItem.publishedTime), true);
+  assert.equal(datetimes.includes(baseItem.verifiedTime), true);
+});
+
+test('表单提交被阻止并立即应用本地状态', () => {
+  const form = new MiniElement('form', null);
+  let prevented = false;
+  let cleared = 0;
+  let applied = 0;
+  bindLocalFormSubmit(form, () => { applied += 1; }, () => { cleared += 1; });
+  form.listeners.submit({ preventDefault() { prevented = true; } });
+  assert.equal(prevented, true);
+  assert.equal(cleared, 1);
+  assert.equal(applied, 1);
+});
+
+test('空结果摘要使用带名称的中文筛选条件', () => {
+  assert.equal(
+    describeActiveFilters({ query: '语音', verificationStatus: 'official', isResearch: 'false', sort: 'score' }),
+    '搜索：语音；核验状态：官方声明；研究属性：非研究内容；排序：编辑评分'
+  );
 });

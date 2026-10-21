@@ -55,6 +55,7 @@ if ($null -ne $css) {
     Require-Match $css '@media\s*\(prefers-reduced-motion:\s*reduce\)' 'Missing reduced-motion media query'
     Require-Match $css '@media\s*\(max-width:' 'Missing narrow-screen media query'
     Require-Match $css '@media\s+print' 'Missing print styles'
+    Require-Match $css '(?s)@media\s+print.*\.featured-meta.*\.overview-number span' 'Print styles must override white text inside light print surfaces'
     Require-Match $css ':focus-visible' 'Missing visible keyboard focus styles'
     Reject-Match $css '(?i)url\([^)]*https?://' 'CSS contains a remote URL'
     Reject-Match $css '(?i)@import' 'CSS must not import remote or local stylesheets'
