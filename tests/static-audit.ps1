@@ -8,7 +8,7 @@ function Require-File([string]$relativePath) {
         $failures.Add("Missing file: $relativePath")
         return $null
     }
-    return Get-Content -Raw -LiteralPath $path
+    return Get-Content -Raw -Encoding UTF8 -LiteralPath $path
 }
 
 function Require-Match([string]$content, [string]$pattern, [string]$message) {
@@ -19,10 +19,18 @@ function Reject-Match([string]$content, [string]$pattern, [string]$message) {
     if ($null -ne $content -and $content -match $pattern) { $failures.Add($message) }
 }
 
+function Require-Literal([string]$content, [string]$literal, [string]$message) {
+    if ($null -eq $content -or -not $content.Contains($literal)) { $failures.Add($message) }
+}
+
 $html = Require-File 'index.html'
 $css = Require-File 'styles.css'
 $app = Require-File 'app.js'
 $data = Require-File 'news-data.js'
+$readme = Require-File 'README.md'
+$sourcePolicy = Require-File 'docs/source-policy.md'
+$verificationPolicy = Require-File 'docs/verification-policy.md'
+$updateGuide = Require-File 'docs/update-guide.md'
 
 if ($null -ne $html) {
     foreach ($element in @('header', 'nav', 'main', 'section', 'article', 'aside', 'footer', 'form', 'label', 'noscript')) {
@@ -60,6 +68,27 @@ Reject-Match $combinedScripts '(?i)\bWebSocket\b' 'Scripts must not create WebSo
 Reject-Match $combinedScripts '(?i)serviceWorker' 'Scripts must not register a Service Worker'
 Reject-Match $combinedScripts '(?i)(google-analytics|googletagmanager|clarity|hm\.baidu|segment\.com)' 'Analytics or tracking code found'
 Reject-Match $combinedScripts '(?i)(api[_-]?key|secret[_-]?key)\s*[:=]\s*"[A-Za-z0-9_-]{16,}' 'Possible embedded secret found'
+
+if ($null -ne $readme) {
+    foreach ($marker in @('double-click', 'news-data.js', 'add-company', 'backup', 'offline', 'Network')) {
+        Require-Literal $readme $marker "README.md missing required marker: $marker"
+    }
+}
+
+if ($null -ne $sourcePolicy) {
+    Require-Match $sourcePolicy 'source-tiers' 'source-policy.md missing source-tiers section'
+    Require-Match $sourcePolicy 'forbidden-sources' 'source-policy.md missing forbidden-sources section'
+}
+
+if ($null -ne $verificationPolicy) {
+    Require-Match $verificationPolicy 'verification-levels' 'verification-policy.md missing verification-levels section'
+    Require-Match $verificationPolicy 'dual-source' 'verification-policy.md missing dual-source rule'
+}
+
+if ($null -ne $updateGuide) {
+    Require-Match $updateGuide 'manual-update' 'update-guide.md missing manual-update section'
+    Require-Match $updateGuide 'rollback' 'update-guide.md missing rollback section'
+}
 
 if ($failures.Count -gt 0) {
     $failures | ForEach-Object { Write-Error $_ -ErrorAction Continue }
