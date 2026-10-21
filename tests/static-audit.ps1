@@ -20,6 +20,7 @@ function Reject-Match([string]$content, [string]$pattern, [string]$message) {
 }
 
 $html = Require-File 'index.html'
+$css = Require-File 'styles.css'
 $app = Require-File 'app.js'
 $data = Require-File 'news-data.js'
 
@@ -37,6 +38,19 @@ if ($null -ne $html) {
     Reject-Match $html '(?i)(?:src|href)="https?://' 'HTML contains a remote resource attribute'
     Reject-Match $html '(?i)<iframe\b' 'HTML must not contain iframe elements'
     Reject-Match $html '(?i)rel="[^"]*(?:preconnect|prefetch|preload)' 'HTML must not preconnect, prefetch, or preload remote resources'
+}
+
+if ($null -ne $css) {
+    foreach ($token in @('#002FA7', '#06143D', '#F5F7FC', '#29C98A', '#FFB84D', '#FF5B6E')) {
+        Require-Match $css ([regex]::Escape($token)) "styles.css missing required color $token"
+    }
+    Require-Match $css '@media\s*\(prefers-reduced-motion:\s*reduce\)' 'Missing reduced-motion media query'
+    Require-Match $css '@media\s*\(max-width:' 'Missing narrow-screen media query'
+    Require-Match $css '@media\s+print' 'Missing print styles'
+    Require-Match $css ':focus-visible' 'Missing visible keyboard focus styles'
+    Reject-Match $css '(?i)url\([^)]*https?://' 'CSS contains a remote URL'
+    Reject-Match $css '(?i)@import' 'CSS must not import remote or local stylesheets'
+    Reject-Match $css '(?i)animation(?:-iteration-count)?\s*:[^;]*infinite' 'CSS contains an infinite animation'
 }
 
 $combinedScripts = "$app`n$data"
